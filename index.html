@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=1920, height=1080">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        
         * {
             margin: 0;
             padding: 0;
@@ -14,7 +16,7 @@
             width: 1920px;
             height: 1080px;
             background: transparent;
-            font-family: 'Arial', sans-serif;
+            font-family: 'Inter', sans-serif;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -93,12 +95,12 @@
 
         .container {
             width: 1700px;
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(0, 0, 0, 0.85);
             backdrop-filter: blur(20px);
             border-radius: 30px;
-            border: 2px solid rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
             padding: 50px;
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
             position: relative;
             z-index: 10;
             opacity: 0;
@@ -214,7 +216,7 @@
             left: 0;
             right: 0;
             height: 3px;
-            background: linear-gradient(90deg, #ff006e, #8338ec, #3a86ff);
+            background: currentColor;
         }
 
         .stat-value {
@@ -265,11 +267,11 @@
         }
 
         .home-highlight .stat-cell::before {
-            background: linear-gradient(90deg, #00d4ff, #0099ff);
+            color: var(--home-color, #00d4ff);
         }
 
         .away-highlight .stat-cell::before {
-            background: linear-gradient(90deg, #ff006e, #ff4d8b);
+            color: var(--away-color, #ff006e);
         }
     </style>
 </head>
@@ -441,23 +443,88 @@
         }
 
         // Data loading
-        const teamLogos = {
-            "AO KALAMATA '80": "logos/kalamata.png",
-            "PANATHINAIKOS A.O.": "logos/panathinaikos.png",
-            "AOP KIFISIAS": "logos/kifisia.png",
-            "OLYMPIACOS S.F.P.": "logos/olympiakos.png",
-            "O.F.I.": "logos/ofi.png",
-            "PAOK": "logos/paok.png",
-            "AONS MILON": "logos/milon.png",
-            "PANIONIOS G.S.S.": "logos/panionios.png",
-            "A.O. FOINIKAS SIROU": "logos/foinikas.png",
-            "AO FLOISVOS": "logos/floisvos.png"
+        // Team data with colors
+        const teamData = {
+            "kalamata": {
+                name: "AO KALAMATA '80",
+                logo: "logos/kalamata.png",
+                color: "#FFD700"
+            },
+            "panathinaikos": {
+                name: "PANATHINAIKOS A.O.",
+                logo: "logos/panathinaikos.png",
+                color: "#00A651"
+            },
+            "kifisia": {
+                name: "AOP KIFISIAS",
+                logo: "logos/kifisia.png",
+                color: "#0066CC"
+            },
+            "olympiakos": {
+                name: "OLYMPIACOS S.F.P.",
+                logo: "logos/olympiakos.png",
+                color: "#ED1C24"
+            },
+            "ofi": {
+                name: "O.F.I.",
+                logo: "logos/ofi.png",
+                color: "#E30613"
+            },
+            "paok": {
+                name: "PAOK",
+                logo: "logos/paok.png",
+                color: "#000000"
+            },
+            "milon": {
+                name: "AONS MILON",
+                logo: "logos/milon.png",
+                color: "#0047AB"
+            },
+            "panionios": {
+                name: "PANIONIOS G.S.S.",
+                logo: "logos/panionios.png",
+                color: "#0047AB"
+            },
+            "foinikas": {
+                name: "A.O. FOINIKAS SIROU",
+                logo: "logos/foinikas.png",
+                color: "#FF6600"
+            },
+            "floisvos": {
+                name: "AO FLOISVOS",
+                logo: "logos/floisvos.png",
+                color: "#1E90FF"
+            }
         };
 
-        // Configuration: path to your JSON file
-        const JSON_FILE_PATH = 'stats.json';
+        // Get team name from URL parameter
+        function getTeamFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const teamParam = urlParams.get('team');
+            
+            if (teamParam) {
+                return teamParam.toLowerCase();
+            }
+            
+            // Check if team is in the path (e.g., /statsbefore/floisvos)
+            const pathParts = window.location.pathname.split('/');
+            const lastPart = pathParts[pathParts.length - 1];
+            
+            if (lastPart && lastPart !== '' && lastPart.toLowerCase() in teamData) {
+                return lastPart.toLowerCase();
+            }
+            
+            // Default fallback
+            return 'floisvos';
+        }
+
+        // Configuration: determine JSON file path based on URL
+        const TEAM_NAME = getTeamFromURL();
+        const JSON_FILE_PATH = `${TEAM_NAME}.json`;
 
         let data = null;
+        let homeTeamColor = '#00d4ff';
+        let awayTeamColor = '#ff006e';
 
         async function loadJSON() {
             try {
