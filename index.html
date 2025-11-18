@@ -499,28 +499,42 @@
 
         // Get team name from URL parameter
         function getTeamFromURL() {
+            // First, check for ?team= parameter
             const urlParams = new URLSearchParams(window.location.search);
             const teamParam = urlParams.get('team');
             
             if (teamParam) {
+                console.log('Team from query parameter:', teamParam);
                 return teamParam.toLowerCase();
             }
             
             // Check if team is in the path (e.g., /statsbefore/floisvos)
-            const pathParts = window.location.pathname.split('/');
+            const pathParts = window.location.pathname.split('/').filter(part => part !== '');
+            console.log('Path parts:', pathParts);
+            
+            // Get the last part of the path
             const lastPart = pathParts[pathParts.length - 1];
             
-            if (lastPart && lastPart !== '' && lastPart.toLowerCase() in teamData) {
-                return lastPart.toLowerCase();
+            // Remove .html extension if present
+            const teamName = lastPart ? lastPart.replace('.html', '').toLowerCase() : '';
+            
+            console.log('Extracted team name:', teamName);
+            
+            // Check if it's a valid team
+            if (teamName && teamName in teamData) {
+                return teamName;
             }
             
             // Default fallback
+            console.warn('No valid team found in URL, using default: floisvos');
             return 'floisvos';
         }
 
         // Configuration: determine JSON file path based on URL
         const TEAM_NAME = getTeamFromURL();
         const JSON_FILE_PATH = `${TEAM_NAME}.json`;
+        
+        console.log('Loading JSON file:', JSON_FILE_PATH);
 
         let data = null;
         let homeTeamColor = '#00d4ff';
@@ -533,13 +547,33 @@
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 data = await response.json();
+                
+                // Set team colors based on loaded data
+                const homeTeamName = data.match_info.home_team;
+                const awayTeamName = data.match_info.away_team;
+                
+                // Find team keys by matching names
+                const homeTeamKey = Object.keys(teamData).find(key => 
+                    teamData[key].name === homeTeamName
+                );
+                const awayTeamKey = Object.keys(teamData).find(key => 
+                    teamData[key].name === awayTeamName
+                );
+                
+                if (homeTeamKey) homeTeamColor = teamData[homeTeamKey].color;
+                if (awayTeamKey) awayTeamColor = teamData[awayTeamKey].color;
+                
+                // Set CSS custom properties for team colors
+                document.documentElement.style.setProperty('--home-color', homeTeamColor);
+                document.documentElement.style.setProperty('--away-color', awayTeamColor);
+                
                 initializeCard();
             } catch (error) {
                 console.error('Error loading JSON:', error);
                 document.querySelector('.container').innerHTML = `
                     <div style="color: #fff; text-align: center; padding: 50px;">
                         <h1>Error Loading Data</h1>
-                        <p>Please make sure stats.json is in the same folder as this HTML file.</p>
+                        <p>Please make sure ${JSON_FILE_PATH} exists.</p>
                         <p style="color: #ff6b6b; margin-top: 20px;">Error: ${error.message}</p>
                     </div>
                 `;
@@ -552,8 +586,17 @@
 
             document.getElementById('homeTeam').textContent = homeTeam;
             document.getElementById('awayTeam').textContent = awayTeam;
-            document.getElementById('homeLogo').src = teamLogos[homeTeam] || '';
-            document.getElementById('awayLogo').src = teamLogos[awayTeam] || '';
+            
+            // Find team data by name
+            const homeTeamKey = Object.keys(teamData).find(key => 
+                teamData[key].name === homeTeam
+            );
+            const awayTeamKey = Object.keys(teamData).find(key => 
+                teamData[key].name === awayTeam
+            );
+            
+            document.getElementById('homeLogo').src = homeTeamKey ? teamData[homeTeamKey].logo : '';
+            document.getElementById('awayLogo').src = awayTeamKey ? teamData[awayTeamKey].logo : '';
         }
 
         function createStatRow(homeValue, label, awayValue, subtext = '') {
@@ -683,6 +726,24 @@
                         // Check if data has actually changed
                         if (JSON.stringify(newData) !== JSON.stringify(data)) {
                             data = newData;
+                            
+                            // Update team colors
+                            const homeTeamName = data.match_info.home_team;
+                            const awayTeamName = data.match_info.away_team;
+                            
+                            const homeTeamKey = Object.keys(teamData).find(key => 
+                                teamData[key].name === homeTeamName
+                            );
+                            const awayTeamKey = Object.keys(teamData).find(key => 
+                                teamData[key].name === awayTeamName
+                            );
+                            
+                            if (homeTeamKey) homeTeamColor = teamData[homeTeamKey].color;
+                            if (awayTeamKey) awayTeamColor = teamData[awayTeamKey].color;
+                            
+                            document.documentElement.style.setProperty('--home-color', homeTeamColor);
+                            document.documentElement.style.setProperty('--away-color', awayTeamColor);
+                            
                             initializeCard();
                             restartAnimations();
                         }
